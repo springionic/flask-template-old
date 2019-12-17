@@ -33,7 +33,7 @@ class Logger(object):
         file_name = caller[1].split('/')[-1]  # 日志记录所在的文件
         line_no = caller[2]                   # 日志记录所在的行数
         func_name = caller[3]                 # 日志记录所在的函数
-        return '%s#%s:%s | %s' % (file_name, func_name, line_no, message)
+        return '%s#%s:%s | %s\n' % (file_name, func_name, line_no, message)
 
     def debug(self, message: str) -> None:
         caller = inspect.stack()[1]

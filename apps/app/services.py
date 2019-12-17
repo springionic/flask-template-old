@@ -10,10 +10,7 @@ class UserService(BaseService):
         super(UserService, self).__init__()
         self.model_cls = User
 
-    def get_users(self):
-        return self.list_all()
-
-    def add_user(self, username):
-        user = User(username=username)
-        user = self.add(user)
-        return user
+    def update_user(self, id, req_data):
+        user = self.session.query(self.model_cls).filter_by(id=id)
+        user['username'] = req_data['username']
+        return self.update(user)

@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: ea437cbd1d8b
+Revision ID: 25d32bdf5848
 Revises: 
-Create Date: 2019-12-16 16:58:39.595232
+Create Date: 2019-12-17 15:13:21.490572
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'ea437cbd1d8b'
+revision = '25d32bdf5848'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -22,8 +22,12 @@ def upgrade():
     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False, comment='主键'),
     sa.Column('create_time', sa.DateTime(), server_default=sa.text('NOW()'), nullable=False, comment='创建时间'),
     sa.Column('update_time', sa.DateTime(), server_default=sa.text('NOW()'), nullable=False, comment='更新时间'),
+    sa.Column('is_deleted', sa.Boolean(), nullable=False, comment='删除标志'),
     sa.Column('username', sa.String(length=48), nullable=False, comment='用户名'),
-    sa.PrimaryKeyConstraint('id')
+    sa.Column('password', sa.String(length=256), nullable=False, comment='密码'),
+    sa.Column('email', sa.String(length=32), nullable=False, comment='邮箱'),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('username')
     )
     op.create_index(op.f('ix_user_create_time'), 'user', ['create_time'], unique=False)
     op.create_index(op.f('ix_user_update_time'), 'user', ['update_time'], unique=False)

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # Created by lilei at 2019/12/16
+import enum
 from datetime import datetime
 
 from flask import jsonify
@@ -11,6 +12,7 @@ from components import error_codes
 from components.pagination import Pagination
 from components.singleton import Singleton
 from config import db
+from config.enums import BaseEnum
 from config.exceptions import CommonException
 
 
@@ -44,7 +46,7 @@ class BaseHandler(Resource):
         if hasattr(self, 'req_schema') and self.req_schema:
             req_schema = self.req_schema(unknown=EXCLUDE)
             self.validate(req_schema, self.req_form)
-            self.req_form_strict = req_schema.dump(self.req_form)
+            self.req_form_strict = req_schema.load(self.req_form)
 
     @staticmethod
     def get_request_form():
@@ -70,7 +72,7 @@ class BaseHandler(Resource):
     @staticmethod
     def success(message='OK!', data=None):
         result = {
-            'message': message
+            'msg': message
         }
         # 不返回数据
         if not data:
@@ -88,7 +90,7 @@ class BaseHandler(Resource):
     @staticmethod
     def fail(error_code, data=None):
         result = {
-            'message': error_code[1]
+            'msg': error_code[1]
         }
         if data:
             result['data'] = data
@@ -167,6 +169,36 @@ class BaseService(object, metaclass=Singleton):
         return instance
 
 
+class IntEnum(db.TypeDecorator):
+    """
+    int enum
+    """
+
+    impl = db.SmallInteger
+
+    def __init__(self, enum_type=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._enum_type = enum_type
+
+    def process_bind_param(self, value, dialect):
+        if isinstance(value, int):
+            return value
+
+        if isinstance(value, BaseEnum):
+            return value.value
+
+        return value
+
+    def process_result_value(self, value, dialect):
+        return self._enum_type(value)
+
+    def process_literal_param(self, value, dialect):
+        pass
+
+    def python_type(self):
+        return type(enum.Enum)
+
+
 class BaseModel(db.Model):
     """模型类基类，抽象类"""
     __abstract__ = True
@@ -174,5 +206,6 @@ class BaseModel(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='主键')
     create_time = db.Column(db.DateTime, index=True, nullable=False, server_default=db.text('NOW()'), comment='创建时间')
     update_time = db.Column(db.DateTime, index=True, nullable=False, server_default=db.text('NOW()'), onupdate=datetime.now, comment='更新时间')
+    is_deleted = db.Column(db.Boolean, nullable=False, default=False, comment='删除标志')
 
 

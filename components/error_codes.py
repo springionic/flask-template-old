@@ -18,3 +18,6 @@ SERVER_HEADERS_REQUIRED = (417, '缺少必要请求头或者不正确')
 SERVER_REQUEST_EXPIRED = (418, '请求已过期')
 
 SERVER_INTERVAL_ERROR = (500, '服务器内部错误')
+
+
+USER_REPEAT = (400, '用户名重复')

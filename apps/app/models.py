@@ -8,7 +8,9 @@ class User(BaseModel):
 
     __tablename__ = 'user'
 
-    username = db.Column(db.String(48), nullable=False, comment='用户名')
+    username = db.Column(db.String(48), nullable=False, unique=True, comment='用户名')
+    password = db.Column(db.String(256), nullable=False, comment='密码')
+    email = db.Column(db.String(32), nullable=False, comment='邮箱')
 
     def __str__(self):
         return self.username
