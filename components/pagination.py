@@ -1,8 +1,12 @@
 # -*- coding: utf-8 -*-
 # Created by lilei at 2019/12/16
+import typing
+
+from config import db
+
 
 class Pagination(object):
-    def __init__(self, current_page, page_size, total, items):
+    def __init__(self, current_page: int, page_size: int, total: int, items: typing.List[db.Model]):
         self.current_page = current_page
         if self.current_page < 1:
             self.current_page = 1
@@ -12,11 +16,12 @@ class Pagination(object):
             self.page_size = 1
 
         self.total = total
-        self.list = items
         self.page_total = self._get_page_total()
 
         if current_page > self.page_total:
             self.current_page = self.page_total
+
+        self.list = items
 
     def _get_page_total(self):
         if self.total % self.page_size == 0:
@@ -33,4 +38,8 @@ class Pagination(object):
         return iter(self.list)
 
     def __str__(self):
+        self.__delattr__('list')
         return str(self.__dict__)
+
+
+

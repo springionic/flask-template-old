@@ -8,6 +8,8 @@ class User(BaseModel):
 
     __tablename__ = 'user'
 
+    __searchable__ = ['username', 'email', 'password']
+
     username = db.Column(db.String(48), nullable=False, unique=True, comment='用户名')
     password = db.Column(db.String(256), nullable=False, comment='密码')
     email = db.Column(db.String(32), nullable=False, comment='邮箱')

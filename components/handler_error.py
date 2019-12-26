@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Created by lilei at 2019/12/16
-from marshmallow import ValidationError
 from werkzeug.exceptions import MethodNotAllowed, BadRequest, NotFound, InternalServerError
 
 from components import error_codes, BaseHandler, get_logger
@@ -27,12 +26,10 @@ def error_handler(e):
         return BaseHandler.fail(error_code, data)
 
     error_code = HTTP_EXCEPTION_ERROR_CODE_MAP.get(type(e))
-
-    if isinstance(e, ValidationError):  # 反序列化参数出错
-        error_code = (412, str(e))
-
+    # if isinstance(e, ValidationError):  # 反序列化参数出错
+    #     error_code = (412, str(e))
     if isinstance(e, AssertionError):  # 某些地方 assert 出错
-        error_code = (501, str(e))
+        error_code = (400, str(e))
     if not error_code:  # 未知服务器内部代码错误
         error_code = error_codes.SERVER_INTERVAL_ERROR
         error_logger.exception(e)

@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 # Created by lilei at 2019/12/16
 import enum
+import re
+from ast import literal_eval
 from datetime import datetime
 
-from flask import jsonify
-from flask_restful import Resource, request
-from marshmallow import Schema, EXCLUDE
+from flask import request, jsonify
+from flask.views import MethodView
+from marshmallow import Schema
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Query
 
 from components import error_codes
 from components.pagination import Pagination
 from components.singleton import Singleton
-from config import db
+from config import db, search
 from config.enums import BaseEnum
 from config.exceptions import CommonException
 
@@ -19,7 +22,7 @@ from config.exceptions import CommonException
 IS_DELETED_COLUMN_NAME = 'is_deleted'
 
 
-class BaseHandler(Resource):
+class BaseHandler(MethodView):
     """所有handler处理类的基类"""
 
     schema = None
@@ -32,6 +35,7 @@ class BaseHandler(Resource):
 
         # 如果请求有 req_schema，则此值为 req_schema 严格 dump 出来的值
         # 否则，此值和 req_form 相等
+        """
         self.req_form_strict = self.req_form
 
         # 当 handler 未指定 req_schema 时，读取请求 handler 对应子类 schema，并设置为当前请求 handler 的 req_schema
@@ -47,12 +51,13 @@ class BaseHandler(Resource):
             req_schema = self.req_schema(unknown=EXCLUDE)
             self.validate(req_schema, self.req_form)
             self.req_form_strict = req_schema.load(self.req_form)
+        """
 
     @staticmethod
     def get_request_form():
         if request.method == 'GET':
             return request.args.to_dict(flat=True)
-        if request.method == 'POST':
+        if request.method in ['POST', 'PUT', 'DELETE', 'PATCH']:
             if not request.is_json:
                 raise CommonException(error_code=error_codes.SERVER_PARAM_INVALID)
             return request.get_json()
@@ -76,7 +81,7 @@ class BaseHandler(Resource):
         }
         # 不返回数据
         if not data:
-            return result, 200
+            return jsonify(result), 200
         # 返回 list 数据
         if isinstance(data, list):
             result['data'] = {
@@ -85,7 +90,7 @@ class BaseHandler(Resource):
         else:
             # 返回 dict 数据
             result['data'] = data
-        return jsonify(result)
+        return jsonify(result), 200
 
     @staticmethod
     def fail(error_code, data=None):
@@ -94,7 +99,7 @@ class BaseHandler(Resource):
         }
         if data:
             result['data'] = data
-        return result, error_code[0]
+        return jsonify(result), error_code[0]
 
 
 class BaseService(object, metaclass=Singleton):
@@ -138,21 +143,36 @@ class BaseService(object, metaclass=Singleton):
     def list_all(self):
         return self.session.query(self.model_cls).all()
 
-    def list_pagination(self, current_page, page_size, filters, order_bys):
-        current_page = int(current_page)
-        page_size = int(page_size)
-        items = self.session.query(self.model_cls) \
-            .filter(*filters) \
-            .order_by(*order_bys) \
-            .limit(page_size).offset((current_page - 1) * page_size) \
-            .all()
+    def list_pagination(self, page_data: dict, model_schema: Schema) -> dict:
+        # items = self.session.query(self.model_cls) \
+        #     .filter(*filters) \
+        #     .order_by(*order_bys) \
+        #     .limit(page_size).offset((current_page - 1) * page_size) \
+        #     .all()
 
-        if current_page == 1 and len(items) < page_size:
-            total = len(items)
+        current_page = page_data.get('current_page', 1)  # 当前页
+        page_size = page_data.get('page_size', 10)  # 每页大小
+        filter = page_data.get('filter', '')  # 过滤条件
+        order_by = page_data.get('order_by', 'id')  # 排序规则
+
+        # 全文检索插件进行搜索，改变原来的
+        items = search.msearch(self.model_cls, query=filter) \
+            .order_by(order_by) \
+            .limit(page_size).offset((current_page-1) * page_size)
+
+        if current_page == 1 and len(list(items)) < page_size:
+            total = len(list(items))
         else:
-            total = self.session.query(self.model_cls).filter(*filters).order_by(*order_bys).count()
+            # total = self.session.query(self.model_cls).filter(*filters).order_by(*order_bys).count()
+            total = search.msearch(self.model_cls, query=filter).count()
+        pagination_info = literal_eval(str(Pagination(current_page, page_size, total, items)))  # 获取分页状况信息
+        items = model_schema.dump(items, many=True)  # 查询对象列表
+        table_plural = self.model_cls.__tablename__ + 's'  # 表名复数
+        pagination_info[table_plural] = items  # 合并信息
 
-        return Pagination(current_page, page_size, total, items)
+        return pagination_info
+
+
 
     def add(self, instance):
         session = self.session
@@ -166,6 +186,13 @@ class BaseService(object, metaclass=Singleton):
         instance = session.merge(instance)
         session.commit()
         session.refresh(instance)
+        return instance
+
+    def delete(self, id):
+        instance = self.get_by_id(id)
+        instance.is_deleted = True
+        self.session.commit()
+        self.session.refresh()
         return instance
 
 
@@ -202,6 +229,13 @@ class IntEnum(db.TypeDecorator):
 class BaseModel(db.Model):
     """模型类基类，抽象类"""
     __abstract__ = True
+
+    @declared_attr
+    def __tablename__(self):
+        model_name = re.sub('(?<!^)(?=[A-Z])', '_', self.__name__).lower()
+        if model_name.endswith('_model'):
+            return model_name.replace('_model', '')
+        return model_name
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True, comment='主键')
     create_time = db.Column(db.DateTime, index=True, nullable=False, server_default=db.text('NOW()'), comment='创建时间')

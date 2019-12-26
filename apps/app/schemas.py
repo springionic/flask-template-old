@@ -9,3 +9,5 @@ class UserSchema(ma.ModelSchema):
 
     class Meta:
         model = User
+
+

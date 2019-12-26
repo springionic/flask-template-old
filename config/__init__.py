@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # Created by lilei at 2019/12/16
 from flask_marshmallow import Marshmallow
+from flask_msearch import Search
 from flask_sqlalchemy import SQLAlchemy
 
 from config.env import *
@@ -14,6 +15,10 @@ class Config(object):
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    WHOOSH_BASE = 'whoosh_index'
+    WHOOSH_ENABLE = True
+
 
 db = SQLAlchemy()  # 数据库连接对象
 ma = Marshmallow()  # 序列化对象
+search = Search(db=db)  # 全局搜索扩展

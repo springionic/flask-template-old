@@ -5,3 +5,5 @@ from components.logger import get_logger
 from components.bases import BaseHandler
 
 from components.bases import BaseService
+
+from components.bases import BaseModel
