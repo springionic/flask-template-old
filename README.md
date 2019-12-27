@@ -1,6 +1,3 @@
-# flask-template
-Flask项目模板！
-
 .
 ├── app # 项目主目录
 │   ├── __init__.py
