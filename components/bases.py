@@ -8,6 +8,7 @@ from datetime import datetime
 from flask import request, jsonify
 from flask.views import MethodView
 from marshmallow import Schema
+from sqlalchemy import desc
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import Query
 
@@ -153,12 +154,17 @@ class BaseService(object, metaclass=Singleton):
         current_page = page_data.get('current_page', 1)  # 当前页
         page_size = page_data.get('page_size', 10)  # 每页大小
         filter = page_data.get('filter', '')  # 过滤条件
-        order_by = page_data.get('order_by', 'id')  # 排序规则
-
+        order_by = page_data.get('order_by', 'id')  # 排序字段
+        order_rule = page_data.get('order_rule', 'asc')  # 排序规则
         # 全文检索插件进行搜索，改变原来的
-        items = search.msearch(self.model_cls, query=filter) \
-            .order_by(order_by) \
-            .limit(page_size).offset((current_page-1) * page_size)
+        if order_rule != 'desc':
+            items = search.msearch(self.model_cls, query=filter) \
+                .order_by(order_by) \
+                .limit(page_size).offset((current_page-1) * page_size)
+        else:
+            items = search.msearch(self.model_cls, query=filter) \
+                .order_by(desc(order_by)) \
+                .limit(page_size).offset((current_page - 1) * page_size)
 
         if current_page == 1 and len(list(items)) < page_size:
             total = len(list(items))
@@ -167,12 +173,10 @@ class BaseService(object, metaclass=Singleton):
             total = search.msearch(self.model_cls, query=filter).count()
         pagination_info = literal_eval(str(Pagination(current_page, page_size, total, items)))  # 获取分页状况信息
         items = model_schema.dump(items, many=True)  # 查询对象列表
-        table_plural = self.model_cls.__tablename__ + 's'  # 表名复数
-        pagination_info[table_plural] = items  # 合并信息
+        # table_plural = self.model_cls.__tablename__ + 's'  # 表名复数
+        pagination_info['list'] = items  # 合并信息
 
         return pagination_info
-
-
 
     def add(self, instance):
         session = self.session
@@ -194,36 +198,6 @@ class BaseService(object, metaclass=Singleton):
         self.session.commit()
         self.session.refresh()
         return instance
-
-
-class IntEnum(db.TypeDecorator):
-    """
-    int enum
-    """
-
-    impl = db.SmallInteger
-
-    def __init__(self, enum_type=None, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self._enum_type = enum_type
-
-    def process_bind_param(self, value, dialect):
-        if isinstance(value, int):
-            return value
-
-        if isinstance(value, BaseEnum):
-            return value.value
-
-        return value
-
-    def process_result_value(self, value, dialect):
-        return self._enum_type(value)
-
-    def process_literal_param(self, value, dialect):
-        pass
-
-    def python_type(self):
-        return type(enum.Enum)
 
 
 class BaseModel(db.Model):

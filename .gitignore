@@ -1,0 +1,10 @@
+mesearch/
+
+.pytest_cache/
+
+*.log
+
+migrations/versions/*.*
+
+*.pyc
+__pycache__

@@ -43,13 +43,14 @@ class UserHandler(BaseHandler):
             user = self.service.get_by_id(id)
             if not user:
                 raise BusinessException(error_codes.USER_NOT_FOUND)
-            return self.success(data={'user': self.schema.dump(user)})
+            return self.success(data=self.schema.dump(user))
         else:
             req_data = self.get_request_form()
             schema = PageSchema(unknown=EXCLUDE)
             self.validate(schema, req_data)
             pagination_data = schema.load(req_data)
-            pagination_users = self.service.list_pagination(pagination_data, model_schema=self.schema)
+            pagination_users = self.service.list_pagination(pagination_data,
+                model_schema=self.schema)
             return self.success(data=pagination_users)
 
     def post(self):
@@ -60,13 +61,13 @@ class UserHandler(BaseHandler):
         except IntegrityError as e:
             log.info(str(e))
             raise BusinessException(error_code=error_codes.USER_REPEAT)
-        return self.success(data={'user': self.schema.dump(user)})
+        return self.success(data=self.schema.dump(user))
 
     def put(self, id):
         req_data = self.get_request_form()
         self.schema.validate(req_data)
         user = self.service.update_user(id, req_data)
-        return self.success(data={'user': self.schema.dump(user)})
+        return self.success(data=self.schema.dump(user))
 
     def delete(self, id):
         pass

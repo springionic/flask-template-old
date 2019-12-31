@@ -9,4 +9,5 @@ class PageSchema(Schema):
     page_size = fields.Int(required=True)
     filter = fields.Str(required=False, missing='')
     order_by = fields.Str(required=False, missing='id')
+    order_rule = fields.Str(required=False, missing='asc')
 
