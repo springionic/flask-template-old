@@ -49,7 +49,7 @@ class UserHandler(BaseHandler):
             schema = PageSchema(unknown=EXCLUDE)
             self.validate(schema, req_data)
             pagination_data = schema.load(req_data)
-            pagination_users = self.service.list_pagination(pagination_data,
+            pagination_users = self.service.list_pagination_new(pagination_data,
                 model_schema=self.schema)
             return self.success(data=pagination_users)
 

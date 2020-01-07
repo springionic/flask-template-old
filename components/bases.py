@@ -144,7 +144,34 @@ class BaseService(object, metaclass=Singleton):
     def list_all(self):
         return self.session.query(self.model_cls).all()
 
+    def list_pagination_new(self, page_data: dict, model_schema: Schema) -> dict:
+        # 新版分页查询，比下边的要更佳
+        current_page = page_data.get('current_page', 1)  # 当前页
+        page_size = page_data.get('page_size', 10)  # 每页大小
+        filter = page_data.get('filter', '')  # 过滤条件
+        order_by = page_data.get('order_by', 'id')  # 排序字段
+        order_rule = page_data.get('order_rule', 'asc')  # 排序规则
+        # 全文检索插件进行搜索，改变原来的
+        if order_rule != 'desc':
+            pagination = search.msearch(self.model_cls, query=filter) \
+                .order_by(order_by) \
+                .paginate(current_page, page_size)
+        else:
+            pagination = search.msearch(self.model_cls, query=filter) \
+                .order_by(desc(order_by)) \
+                .paginate(current_page, page_size)
+
+        return {
+            'list': model_schema.dump(pagination.items, many=True) ,
+            'current_page': pagination.page,
+            'total': len(pagination.items),
+            'page_total': pagination.pages,
+            'page_size': page_size
+        }
+
+
     def list_pagination(self, page_data: dict, model_schema: Schema) -> dict:
+        # 这里的分页操作最好用Flask自带的paginate来完成
         # items = self.session.query(self.model_cls) \
         #     .filter(*filters) \
         #     .order_by(*order_bys) \
