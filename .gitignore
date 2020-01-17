@@ -4,8 +4,6 @@ mesearch/
 
 *.log
 
-migrations/versions/*.*
-
 *.pyc
 __pycache__
 

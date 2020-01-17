@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 # Created by lilei at 2019/12/16
-from marshmallow import EXCLUDE, Schema, fields
+from marshmallow import EXCLUDE
 from sqlalchemy.exc import IntegrityError
 
-from apps.app.schemas import UserSchema
 from apps.app.services import UserService
-from components import BaseHandler, error_codes, get_logger
-from components.error_codes import SERVER_PARAM_INVALID
-from components.global_schema import PageSchema
+from components import BaseHandler, get_logger
+from config import error_codes
+from components.global_schema import PageSchema, UserSchema
 from config.exceptions import BusinessException
 
 

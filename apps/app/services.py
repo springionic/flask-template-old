@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # Created by lilei at 2019/12/16
 from apps.app.models import User
-from components import BaseService, error_codes
+from components import BaseService
+from config import error_codes
 from config.exceptions import BusinessException
 
 

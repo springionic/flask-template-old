@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 # Created by lilei at 2019/12/16
-
-from config import ma
-from apps.app.models import User
+from marshmallow import Schema, fields
 
 
-class UserSchema(ma.ModelSchema):
+class TestScheme(Schema):
 
-    class Meta:
-        model = User
-
+    project_id = fields.Int(required=True, missing=0, default=0)
+    name = fields.Str(required=True)
+    friends = fields.List(fields.String(), required=True)
 
